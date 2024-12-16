@@ -24,7 +24,7 @@ The resulting file can easily be copied and pasted into LLM prompts to provide t
 - 🌍 **Global Config Support**: Define default settings in a `~/.gptreerc` file.
 - 🔧 **Directory-Specific Config**: Customize behavior for each project via a `.combine_config` file.
 - 🎛 **CLI Overrides**: Fine-tune settings directly in the CLI for maximum control.
-- 📜 **Easy Output**: Combines all selected files into a single text file, ready to paste into an LLM prompt.
+- 📜 **Easy Output**: Combines all selected files into a single text file, ready to paste into an LLM prompt _or_ have the output automatically copied to clipboard.
 
 ---
 
@@ -58,6 +58,7 @@ gptree
 | Flag                        | Description                                                                 |
 |-----------------------------|-----------------------------------------------------------------------------|
 | `--interactive`, `-i`       | Enable interactive file selection.                                          |
+| `--copy`, `-c`              | Copy result directly to clipboard.                                          |
 | `--include-file-types`      | Comma-separated list of file types to include (e.g., `.py,.js` or `py,js`). Use `*` for all types. |
 | `--exclude-file-types`      | Comma-separated list of file types to exclude (e.g., `.log,.tmp` or `log,tmp`). |
 | `--output-file`             | Specify the name of the output file.                                        |
@@ -121,6 +122,7 @@ includeFileTypes: .py,.js  # Include only Python and JavaScript files
 excludeFileTypes: .log,.tmp  # Exclude log and temporary files
 outputFile: default_combined.txt
 outputFileLocally: true
+copyToClipboard: false
 ```
 
 This file is automatically created with default settings if it doesn't exist.
@@ -136,6 +138,7 @@ includeFileTypes: *  # Include all file types
 excludeFileTypes: .test  # Exclude test files
 outputFile: project_combined.txt
 outputFileLocally: false
+copyToClipboard: true
 ```
 
 #### Configuration Precedence

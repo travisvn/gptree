@@ -3,6 +3,7 @@ import argparse
 import readline
 import pathspec
 import curses
+import pyperclip
 
 # Global list of obvious files and directories to ignore
 DEFAULT_IGNORES = {".git", ".vscode", "__pycache__", ".DS_Store", ".idea"}
@@ -18,6 +19,10 @@ def generate_tree_structure(root_dir, gitignore_spec):
             d for d in dirs
             if not is_ignored(os.path.join(root, d), gitignore_spec, root_dir)
         ]
+
+        # Skip the current directory if it is ignored
+        if is_ignored(root, gitignore_spec, root_dir) or is_ignored(os.path.basename(root) + '/', gitignore_spec, root_dir):
+            continue
 
         # Add the current directory to the tree
         level = root.replace(root_dir, '').count(os.sep)
@@ -45,15 +50,18 @@ def load_gitignore(root_dir):
 
 def is_ignored(file_or_dir_path, gitignore_spec, root_dir):
     """Check if a file or directory is ignored by .gitignore or default ignores."""
-    # Check if it's in the default ignore list
-    if any(segment in DEFAULT_IGNORES for segment in file_or_dir_path.split(os.sep)):
+    # Normalize the path relative to the root directory
+    relative_path = os.path.relpath(file_or_dir_path, root_dir)
+
+    # Check if it's in the default ignore list (e.g., ".git", "__pycache__")
+    if any(segment in DEFAULT_IGNORES for segment in relative_path.split(os.sep)):
         return True
 
-    # Check against .gitignore
-    if gitignore_spec:
-        relative_path = os.path.relpath(file_or_dir_path, root_dir)
-        if gitignore_spec.match_file(relative_path):
-            return True
+    # Check against .gitignore if a spec is provided
+    if gitignore_spec and gitignore_spec.match_file(relative_path):
+        return True
+    elif gitignore_spec and gitignore_spec.match_file(file_or_dir_path):
+        return True
 
     return False
 
@@ -172,6 +180,14 @@ def save_to_file(output_path, content):
     with open(output_path, "w", encoding="utf-8") as f:
         f.write(content)
 
+def copy_to_clipboard(content):
+    """Copy the provided content to the clipboard."""
+    try:
+        pyperclip.copy(content)
+        print("Output copied to clipboard!")
+    except pyperclip.PyperclipException as e:
+        print(f"Failed to copy to clipboard: {e}")
+
 def setup_autocomplete():
     """Enable tab-completion for input prompts."""
     def complete_path(text, state):
@@ -207,6 +223,8 @@ def load_or_create_config(root_dir):
             config_file.write("outputFile: combined_code.txt\n")
             config_file.write("# Whether to output the file locally or relative to the project directory\n")
             config_file.write("outputFileLocally: true\n")
+            config_file.write("# Whether to copy the output to the clipboard\n")
+            config_file.write("copyToClipboard: false\n")
         print(f"Default config file created at {config_path}")
     return config_path
 
@@ -225,7 +243,8 @@ def parse_config(config_path):
         "includeFileTypes": "*",
         "excludeFileTypes": [],
         "outputFile": "combined_code.txt",
-        "outputFileLocally": True
+        "outputFileLocally": True,
+        "copyToClipboard": False,
     }
 
     with open(config_path, "r", encoding="utf-8") as config_file:
@@ -241,6 +260,8 @@ def parse_config(config_path):
                 config["outputFile"] = line.split(":", 1)[1].strip()
             elif line.startswith("outputFileLocally:"):
                 config["outputFileLocally"] = line.split(":", 1)[1].strip().lower() == "true"
+            elif line.startswith("copyToClipboard:"):
+                config["copyToClipboard"] = line.split(":", 1)[1].strip().lower() == "true"
 
     return config
 
@@ -263,6 +284,8 @@ def load_global_config():
             global_config_file.write("outputFileLocally: true\n")
             global_config_file.write("# Whether to use .gitignore\n")
             global_config_file.write("useGitIgnore: true\n")
+            global_config_file.write("# Whether to copy the output to the clipboard\n")
+            global_config_file.write("copyToClipboard: false\n")
         print(f"Default global config file created at {global_config_path}")
 
     # Parse the global config file
@@ -270,7 +293,7 @@ def load_global_config():
 
 def main():
     setup_autocomplete()
-    parser = argparse.ArgumentParser(description="Combine project files into a single text file with directory structure.")
+    parser = argparse.ArgumentParser(description="Provide LLM context for coding projects by combining project files into a single text file (or clipboard text) with directory tree structure")
     parser.add_argument("path", nargs="?", default=".", help="Root directory of the project.")
     parser.add_argument("-i", "--interactive", action="store_true", help="Select files interactively.")
     parser.add_argument("--ignore-gitignore", action="store_true", help="Ignore .gitignore patterns.")
@@ -279,6 +302,7 @@ def main():
     parser.add_argument("--output-file", help="Name of the output file.")
     parser.add_argument("--output-file-locally", action="store_true", help="Save the output file in the current working directory.")
     parser.add_argument("--no-config", "-nc", action="store_true", help="Disable creation or use of a configuration file.")
+    parser.add_argument("-c", "--copy", action="store_true", help="Copy the output to the clipboard.")
 
     args = parser.parse_args()
 
@@ -319,7 +343,13 @@ def main():
         print(str(e))
         return  # Exit without saving
 
-    save_to_file(output_file, combined_content)
+    # Save to file
+    save_to_file(config["outputFile"], combined_content)
+
+    # Copy to clipboard if the flag is set or the config specifies it
+    if args.copy or config.get("copyToClipboard", False):
+        copy_to_clipboard(combined_content)
+
     print(f"Done! Combined content saved to {output_file}.")
 
 if __name__ == "__main__":
