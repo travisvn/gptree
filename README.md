@@ -2,7 +2,12 @@
 
 **A CLI tool to provide LLM context for coding projects by combining project files into a single text file with a directory tree structure.**
 
----
+![GitHub stars](https://img.shields.io/github/stars/travisvn/gptree?style=social)
+![GitHub repo size](https://img.shields.io/github/repo-size/travisvn/gptree)
+![GitHub language count](https://img.shields.io/github/languages/count/travisvn/gptree)
+![GitHub top language](https://img.shields.io/github/languages/top/travisvn/gptree)
+![GitHub last commit](https://img.shields.io/github/last-commit/travisvn/gptree?color=red)
+![Hits](https://hits.seeyoufarm.com/api/count/incr/badge.svg?url=https%3A%2F%2Fgithub.com%2Ftravisvn%2Fgptree&count_bg=%2379C83D&title_bg=%23555555&icon=&icon_color=%23E7E7E7&title=hits&edge_flat=false)
 
 ### What is gptree?
 
