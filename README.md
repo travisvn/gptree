@@ -19,6 +19,8 @@ When working with Large Language Models (LLMs) to continue or debug your coding 
 
 The resulting file can easily be copied and pasted into LLM prompts to provide the model with the necessary context to assist you effectively.
 
+![GPTree Demo](./demo.gif)
+
 ---
 
 ### Features
