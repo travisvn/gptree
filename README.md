@@ -58,15 +58,15 @@ gptree
 
 | Flag                        | Description                                                                 |
 |-----------------------------|-----------------------------------------------------------------------------|
-| `--interactive`, `-i`       | Enable interactive file selection.                                          |
-| `--copy`, `-c`              | Copy result directly to clipboard.                                          |
-| `--include-file-types`      | Comma-separated list of file types to include (e.g., `.py,.js` or `py,js`). Use `*` for all types. |
-| `--exclude-file-types`      | Comma-separated list of file types to exclude (e.g., `.log,.tmp` or `log,tmp`). |
-| `--output-file`             | Specify the name of the output file.                                        |
-| `--output-file-locally`     | Save the output file in the current working directory.                      |
-| `--no-config`, `-nc`        | Disable creation or use of configuration files.                            |
-| `--ignore-gitignore`        | Ignore `.gitignore` patterns.                                               |
-| `path`                      | (Optional) Root directory of your project. Defaults to `.`.                |
+| `--interactive`, `-i`       | Enable interactive file selection                                           |
+| `--copy`, `-c`              | Copy result directly to clipboard                                           |
+| `--include-file-types`      | Comma-separated list of file types to include (e.g., `.py,.js` or `py,js`). Use `*` for all types |
+| `--exclude-file-types`      | Comma-separated list of file types to exclude (e.g., `.log,.tmp` or `log,tmp`) |
+| `--output-file`             | Specify the name of the output file                                        |
+| `--output-file-locally`     | Save the output file in the current working directory                      |
+| `--no-config`, `-nc`        | Disable creation or use of configuration files                             |
+| `--ignore-gitignore`        | Ignore `.gitignore` patterns                                               |
+| `path`                      | (Optional) Root directory of your project. Defaults to `.`                 |
 
 ### Example:
 
@@ -152,11 +152,11 @@ In interactive mode, use the following controls:
 
 | Key         | Action                              |
 |-------------|-------------------------------------|
-| `↑/↓`       | Navigate the file list.            |
-| `SPACE`     | Toggle selection of the current file. |
-| `a`         | Select or deselect all files.      |
-| `ENTER`     | Confirm the selection and proceed. |
-| `ESC`       | Quit the process immediately.      |
+| `↑/↓`       | Navigate the file list              |
+| `SPACE`     | Toggle selection of the current file |
+| `a`         | Select or deselect all files        |
+| `ENTER`     | Confirm the selection and proceed   |
+| `ESC`       | Quit the process immediately        |
 
 ## Contributing
 
@@ -169,8 +169,6 @@ In interactive mode, use the following controls:
    ```
 3. Submit a pull request with your changes.
 
----
-
-### License
+## License
 
 This project is licensed under the MIT License.
