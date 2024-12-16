@@ -1,4 +1,4 @@
-## gptree
+# gptree
 
 **A CLI tool to provide LLM context for coding projects by combining project files into a single text file with a directory tree structure.**
 
@@ -9,7 +9,7 @@
 ![GitHub last commit](https://img.shields.io/github/last-commit/travisvn/gptree?color=red)
 ![Hits](https://hits.seeyoufarm.com/api/count/incr/badge.svg?url=https%3A%2F%2Fgithub.com%2Ftravisvn%2Fgptree&count_bg=%2379C83D&title_bg=%23555555&icon=&icon_color=%23E7E7E7&title=hits&edge_flat=false)
 
-### What is gptree?
+## What is gptree?
 
 When working with Large Language Models (LLMs) to continue or debug your coding projects, providing the right context is key. `gptree` simplifies this by:
 
@@ -21,9 +21,7 @@ The resulting file can easily be copied and pasted into LLM prompts to provide t
 
 ![GPTree Demo](./demo.gif)
 
----
-
-### Features
+## Features
 
 - 🗂 **Tree Structure**: Includes a visual directory tree of your project.
 - ✅ **Smart File Selection**: Automatically excludes ignored files using `.gitignore` and common directories like `.git`, `__pycache__`, and `.vscode`.
@@ -33,26 +31,22 @@ The resulting file can easily be copied and pasted into LLM prompts to provide t
 - 🎛 **CLI Overrides**: Fine-tune settings directly in the CLI for maximum control.
 - 📜 **Easy Output**: Combines all selected files into a single text file, ready to paste into an LLM prompt _or_ have the output automatically copied to clipboard.
 
----
+## Installation
 
-### Installation
-
-#### Install via Homebrew (recommended)
+### Install via Homebrew (recommended)
 Once the Homebrew tap is ready, install `gptree` with:
 ```bash
 brew tap travisvn/gptree
 brew install gptree
 ```
 
-#### Install via pip
+### Install via pip
 Alternatively, install `gptree` (`gptree-cli`) directly via pip:
 ```bash
 pip install gptree-cli
 ```
 
----
-
-### Usage
+## Usage
 
 Run `gptree` in your project directory:
 
@@ -60,7 +54,7 @@ Run `gptree` in your project directory:
 gptree
 ```
 
-#### Options:
+### Options:
 
 | Flag                        | Description                                                                 |
 |-----------------------------|-----------------------------------------------------------------------------|
@@ -74,7 +68,7 @@ gptree
 | `--ignore-gitignore`        | Ignore `.gitignore` patterns.                                               |
 | `path`                      | (Optional) Root directory of your project. Defaults to `.`.                |
 
-#### Example:
+### Example:
 
 Interactive file selection with custom file types:
 ```bash
@@ -86,9 +80,7 @@ Disable configuration files:
 gptree --no-config
 ```
 
----
-
-### Example Output
+## Example Output
 
 Running `gptree` generates a file like this:
 
@@ -114,11 +106,9 @@ def add(a, b):
 # END FILE CONTENTS
 ```
 
----
+## Configuration
 
-### Configuration
-
-#### Global Config (`~/.gptreerc`)
+### Global Config (`~/.gptreerc`)
 
 Define your global defaults in `~/.gptreerc` to avoid repetitive setup across projects. Example:
 
@@ -134,7 +124,7 @@ copyToClipboard: false
 
 This file is automatically created with default settings if it doesn't exist.
 
-#### Directory Config (`.combine_config`)
+### Directory Config (`.combine_config`)
 
 Customize settings for a specific project by adding a `.combine_config` file to your project root. Example:
 
@@ -148,7 +138,7 @@ outputFileLocally: false
 copyToClipboard: true
 ```
 
-#### Configuration Precedence
+### Configuration Precedence
 
 Settings are applied in the following order (highest to lowest precedence):
 1. **CLI Arguments**: Always override other settings.
@@ -156,9 +146,7 @@ Settings are applied in the following order (highest to lowest precedence):
 3. **Global Config**: User-defined defaults in `~/.gptreerc`.
 4. **Programmed Defaults**: Built-in defaults used if no other settings are provided.
 
----
-
-### Interactive Mode
+## Interactive Mode
 
 In interactive mode, use the following controls:
 
@@ -170,9 +158,7 @@ In interactive mode, use the following controls:
 | `ENTER`     | Confirm the selection and proceed. |
 | `ESC`       | Quit the process immediately.      |
 
----
-
-### Contributing
+## Contributing
 
 1. Fork this repository.
 2. Clone your fork and create a new branch:
