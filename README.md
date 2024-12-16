@@ -20,8 +20,10 @@ The resulting file can easily be copied and pasted into LLM prompts to provide t
 
 - 🗂 **Tree Structure**: Includes a visual directory tree of your project.
 - ✅ **Smart File Selection**: Automatically excludes ignored files using `.gitignore` and common directories like `.git`, `__pycache__`, and `.vscode`.
-- 🎛 **Interactive Mode**: Select or deselect files interactively using arrow keys.
-- 🔧 **Configurable**: Customizable behavior via a `.combine_config` file.
+- 🎛 **Interactive Mode**: Select or deselect files interactively using arrow keys, with the ability to quit immediately by pressing `ESC`.
+- 🌍 **Global Config Support**: Define default settings in a `~/.gptreerc` file.
+- 🔧 **Directory-Specific Config**: Customize behavior for each project via a `.combine_config` file.
+- 🎛 **CLI Overrides**: Fine-tune settings directly in the CLI for maximum control.
 - 📜 **Easy Output**: Combines all selected files into a single text file, ready to paste into an LLM prompt.
 
 ---
@@ -53,16 +55,27 @@ gptree
 
 #### Options:
 
-| Flag                    | Description                                       |
-|-------------------------|---------------------------------------------------|
-| `--interactive`, `-i`   | Enable interactive file selection.                |
-| `path`                  | (Optional) Root directory of your project. Defaults to `.`. |
+| Flag                        | Description                                                                 |
+|-----------------------------|-----------------------------------------------------------------------------|
+| `--interactive`, `-i`       | Enable interactive file selection.                                          |
+| `--include-file-types`      | Comma-separated list of file types to include (e.g., `.py,.js` or `py,js`). Use `*` for all types. |
+| `--exclude-file-types`      | Comma-separated list of file types to exclude (e.g., `.log,.tmp` or `log,tmp`). |
+| `--output-file`             | Specify the name of the output file.                                        |
+| `--output-file-locally`     | Save the output file in the current working directory.                      |
+| `--no-config`, `-nc`        | Disable creation or use of configuration files.                            |
+| `--ignore-gitignore`        | Ignore `.gitignore` patterns.                                               |
+| `path`                      | (Optional) Root directory of your project. Defaults to `.`.                |
 
 #### Example:
 
-To interactively choose files:
+Interactive file selection with custom file types:
 ```bash
-gptree --interactive
+gptree --interactive --include-file-types '.py,.js'
+```
+
+Disable configuration files:
+```bash
+gptree --no-config
 ```
 
 ---
@@ -97,16 +110,55 @@ def add(a, b):
 
 ### Configuration
 
-You can customize `gptree` behavior using a `.combine_config` file in your project root. Example:
+#### Global Config (`~/.gptreerc`)
+
+Define your global defaults in `~/.gptreerc` to avoid repetitive setup across projects. Example:
+
+```yaml
+# ~/.gptreerc
+useGitIgnore: true
+includeFileTypes: .py,.js  # Include only Python and JavaScript files
+excludeFileTypes: .log,.tmp  # Exclude log and temporary files
+outputFile: default_combined.txt
+outputFileLocally: true
+```
+
+This file is automatically created with default settings if it doesn't exist.
+
+#### Directory Config (`.combine_config`)
+
+Customize settings for a specific project by adding a `.combine_config` file to your project root. Example:
 
 ```yaml
 # .combine_config
-useGitIgnore: true
-includeFileTypes: .py,.js  # Include only Python and JavaScript files
-excludeFileTypes: .test    # Exclude files with .test extensions
-outputFile: gptree_output.txt
-outputFileLocally: true
+useGitIgnore: false
+includeFileTypes: *  # Include all file types
+excludeFileTypes: .test  # Exclude test files
+outputFile: project_combined.txt
+outputFileLocally: false
 ```
+
+#### Configuration Precedence
+
+Settings are applied in the following order (highest to lowest precedence):
+1. **CLI Arguments**: Always override other settings.
+2. **Directory Config**: Project-specific settings in `.combine_config`.
+3. **Global Config**: User-defined defaults in `~/.gptreerc`.
+4. **Programmed Defaults**: Built-in defaults used if no other settings are provided.
+
+---
+
+### Interactive Mode
+
+In interactive mode, use the following controls:
+
+| Key         | Action                              |
+|-------------|-------------------------------------|
+| `↑/↓`       | Navigate the file list.            |
+| `SPACE`     | Toggle selection of the current file. |
+| `a`         | Select or deselect all files.      |
+| `ENTER`     | Confirm the selection and proceed. |
+| `ESC`       | Quit the process immediately.      |
 
 ---
 

@@ -173,3 +173,4 @@ venv
 .venv
 
 combined_code.txt
+.combine_config
