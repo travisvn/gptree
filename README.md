@@ -35,20 +35,31 @@ The resulting file can easily be copied and pasted into LLM prompts to provide t
 
 ## Installation
 
-### Install via Homebrew 🍺 (recommended)
-Once the Homebrew tap is ready, install `gptree` with:
+### Install via Homebrew 🍺 (easiest)
 ```bash
 brew tap travisvn/tap
 brew install gptree
 ```
 
+#### Better performance option (recommended)
+If you have `pip` 🐍 and `brew` (Homebrew) 🍺 installed on your machine already, a more performant version of `gptree` is available at a different tap:
+```bash
+brew tap travisvn/gptree
+brew install gptree
+```
+
 ### Install via pip 🐍
-Alternatively, install `gptree` (`gptree-cli`) directly via pip:
+Alternatively, install `gptree` (`gptree-cli`) directly via [pip](https://pypi.org/project/gptree-cli/):
 ```bash
 pip install gptree-cli
 ```
 
 You can also try `pipx` 
+
+> [!NOTE]
+> Performance is better when installing directly with Python
+> 
+> The `brew tap travisvn/tap` version is a pre-compiled binary whereas `brew tap travisvn/gptree` installs via `pip`
 
 ## Usage
 
