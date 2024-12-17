@@ -48,6 +48,8 @@ jobs:
     name: Create Release
     needs: build
     runs-on: ubuntu-latest
+    permissions:
+      contents: write # Required to create a release and upload assets
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
