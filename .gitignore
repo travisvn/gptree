@@ -176,3 +176,5 @@ combined_code.txt
 .combine_config
 
 .DS_Store
+.gptree_config
+gptree_output.txt

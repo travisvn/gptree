@@ -4,9 +4,28 @@ import readline
 import pathspec
 import curses
 import pyperclip
+import copy
+
+CURRENT_VERSION = 'v1.1.0'
+
+SAFE_MODE_MAX_FILES = 30
+SAFE_MODE_MAX_LENGTH = 3000
 
 # Global list of obvious files and directories to ignore
-DEFAULT_IGNORES = {".git", ".vscode", "__pycache__", ".DS_Store", ".idea"}
+DEFAULT_IGNORES = {".git", ".vscode", "__pycache__", ".DS_Store", ".idea", ".gitignore"}
+PROJECT_CONFIG_FILE = '.gptree_config'
+OUTPUT_FILE = 'gptree_output.txt'
+
+DEFAULT_CONFIG = {
+    "useGitIgnore": True,
+    "includeFileTypes": "*",
+    "excludeFileTypes": [],
+    "outputFile": OUTPUT_FILE,
+    "outputFileLocally": True,
+    "copyToClipboard": False,
+    "safeMode": True,
+    "storeFilesChosen": True,
+}
 
 def generate_tree_structure(root_dir, gitignore_spec):
     """Generate a tree-like directory structure, excluding ignored files and directories."""
@@ -206,13 +225,11 @@ def prompt_user_input(prompt, default):
     user_input = input(f"{prompt} [{default}]: ").strip()
     return user_input if user_input else default
 
-def load_or_create_config(root_dir):
-    """Load or create a configuration file in the root directory."""
-    config_path = os.path.join(root_dir, ".combine_config")
-    if not os.path.exists(config_path):
-        print("Configuration file not found. Creating default config file...")
-        with open(config_path, "w", encoding="utf-8") as config_file:
-            config_file.write("# Combine Config\n")
+def write_config(file_path, isGlobal = False):
+    if not os.path.exists(file_path):
+        print(f"Configuration file not found. Creating default {'global' if isGlobal else 'local'} config file...")
+        with open(file_path, "w", encoding="utf-8") as config_file:
+            config_file.write(f"# GPTree {'Global' if isGlobal else 'Local'} Config")
             config_file.write("# Whether to use .gitignore\n")
             config_file.write("useGitIgnore: true\n")
             config_file.write("# File types to include (e.g., .py,.js)\n")
@@ -220,13 +237,22 @@ def load_or_create_config(root_dir):
             config_file.write("# File types to exclude when includeFileTypes is '*'\n")
             config_file.write("excludeFileTypes: \n")
             config_file.write("# Output file name\n")
-            config_file.write("outputFile: combined_code.txt\n")
+            config_file.write(f"outputFile: {OUTPUT_FILE}\n")
             config_file.write("# Whether to output the file locally or relative to the project directory\n")
             config_file.write("outputFileLocally: true\n")
             config_file.write("# Whether to copy the output to the clipboard\n")
             config_file.write("copyToClipboard: false\n")
-        print(f"Default config file created at {config_path}")
-    return config_path
+            config_file.write("safeMode: true\n")
+            config_file.write("storeFilesChosen: true\n")
+            if not isGlobal:
+                config_file.write("previousFiles: \n")
+        print(f"Default {'global' if isGlobal else 'local'} config file created at {file_path}")
+    return file_path
+
+def load_or_create_config(root_dir):
+    """Load or create a configuration file in the root directory."""
+    config_path = os.path.join(root_dir, PROJECT_CONFIG_FILE)
+    return write_config(config_path, False)
 
 def normalize_file_types(file_types):
     """Normalize file types to ensure they have a leading dot and are valid."""
@@ -238,14 +264,7 @@ def normalize_file_types(file_types):
 
 def parse_config(config_path):
     """Parse the configuration file for options and patterns."""
-    config = {
-        "useGitIgnore": True,
-        "includeFileTypes": "*",
-        "excludeFileTypes": [],
-        "outputFile": "combined_code.txt",
-        "outputFileLocally": True,
-        "copyToClipboard": False,
-    }
+    config = copy.deepcopy(DEFAULT_CONFIG)
 
     with open(config_path, "r", encoding="utf-8") as config_file:
         for line in config_file:
@@ -262,6 +281,10 @@ def parse_config(config_path):
                 config["outputFileLocally"] = line.split(":", 1)[1].strip().lower() == "true"
             elif line.startswith("copyToClipboard:"):
                 config["copyToClipboard"] = line.split(":", 1)[1].strip().lower() == "true"
+            elif line.startswith("safeMode:"):
+                config["safeMode"] = line.split(":", 1)[1].strip().lower() == "true"
+            elif line.startswith("storeFilesChosen:"):
+                config["storeFilesChosen"] = line.split(":", 1)[1].strip().lower() == "true"
 
     return config
 
@@ -269,27 +292,8 @@ def load_global_config():
     """Load global configuration from ~/.gptreerc, or create it with defaults if it doesn't exist."""
     global_config_path = os.path.expanduser("~/.gptreerc")
 
-    # If the global config file doesn't exist, create it with defaults
-    if not os.path.exists(global_config_path):
-        print("Global configuration file not found. Creating default global config file...")
-        with open(global_config_path, "w", encoding="utf-8") as global_config_file:
-            global_config_file.write("# GPTree Global Config\n")
-            global_config_file.write("# File types to include (e.g., .py,.js)\n")
-            global_config_file.write("includeFileTypes: *\n")
-            global_config_file.write("# File types to exclude\n")
-            global_config_file.write("excludeFileTypes: \n")
-            global_config_file.write("# Output file name\n")
-            global_config_file.write("outputFile: combined_code.txt\n")
-            global_config_file.write("# Whether to output the file locally\n")
-            global_config_file.write("outputFileLocally: true\n")
-            global_config_file.write("# Whether to use .gitignore\n")
-            global_config_file.write("useGitIgnore: true\n")
-            global_config_file.write("# Whether to copy the output to the clipboard\n")
-            global_config_file.write("copyToClipboard: false\n")
-        print(f"Default global config file created at {global_config_path}")
-
-    # Parse the global config file
-    return parse_config(global_config_path)
+    result_config_path = write_config(global_config_path, isGlobal=True)
+    return parse_config(result_config_path)
 
 def main():
     setup_autocomplete()
@@ -303,8 +307,16 @@ def main():
     parser.add_argument("--output-file-locally", action="store_true", help="Save the output file in the current working directory.")
     parser.add_argument("--no-config", "-nc", action="store_true", help="Disable creation or use of a configuration file.")
     parser.add_argument("-c", "--copy", action="store_true", help="Copy the output to the clipboard.")
+    parser.add_argument("-p", "--previous", action="store_true", help="Use the previous file selection.")
+    parser.add_argument("-s", "--save", action="store_true", help="Save selected files to config.")
+    parser.add_argument("--version", action="store_true", help="Returns the version of GPTree.")
+    parser.add_argument("--disable-safe-mode", "-dsm", action="store_true", help="Disable safe mode.")
 
     args = parser.parse_args()
+
+    if args.version:
+        print(f"{CURRENT_VERSION}")
+        return
 
     # If arguments are not provided, prompt the user for input
     path = args.path if args.path != "." else prompt_user_input("Enter the root directory of the project", ".")
@@ -327,6 +339,16 @@ def main():
         config["outputFile"] = args.output_file
     if args.output_file_locally:
         config["outputFileLocally"] = True
+    if args.save:
+        config["storeFilesChosen"] = True
+    if args.disable_safe_mode:
+        config["safeMode"] = False
+
+    # Implement "previous" argument
+    #   Check local config file for CSV of previousFiles line & use these instead of selecting files
+    #       (add new argument to combine_files_with_structure for this and create combined_content accordingly)
+    if args.previous:
+        pass
 
     # Determine output file path
     output_file = config["outputFile"]
@@ -335,6 +357,9 @@ def main():
 
     # Determine whether to use .gitignore based on config and CLI arguments
     use_gitignore = not args.ignore_gitignore and config["useGitIgnore"]
+
+    # Implement safe mode measures — max num of files, max size of combined_content before exiting
+    #   Probably pass safeMode config to combine_files_with_structure() so it can exit if need-be
 
     try:
         print(f"Combining files in {path} into {output_file}...")
@@ -349,6 +374,10 @@ def main():
     # Copy to clipboard if the flag is set or the config specifies it
     if args.copy or config.get("copyToClipboard", False):
         copy_to_clipboard(combined_content)
+
+    if config["storeFilesChosen"]:
+        # Implement saving files (with relative path) as comma-separated-values to the local config file
+        pass
 
     print(f"Done! Combined content saved to {output_file}.")
 
