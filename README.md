@@ -35,18 +35,20 @@ The resulting file can easily be copied and pasted into LLM prompts to provide t
 
 ## Installation
 
-### Install via Homebrew (recommended)
+### Install via Homebrew 🍺 (recommended)
 Once the Homebrew tap is ready, install `gptree` with:
 ```bash
 brew tap travisvn/tap
 brew install gptree
 ```
 
-### Install via pip
+### Install via pip 🐍
 Alternatively, install `gptree` (`gptree-cli`) directly via pip:
 ```bash
 pip install gptree-cli
 ```
+
+You can also try `pipx` 
 
 ## Usage
 
@@ -55,6 +57,8 @@ Run `gptree` in your project directory:
 ```bash
 gptree
 ```
+
+Or run it anywhere and define the relative path to your project
 
 ### Options
 
