@@ -19,7 +19,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # Setup Python
+      # Set up Python
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
@@ -31,41 +31,63 @@ jobs:
           python -m pip install --upgrade pip
           pip install pyinstaller pathspec pyperclip
 
-      # Build binary
+      # Build binary with PyInstaller
       - name: Build executable with PyInstaller
         run: |
           pyinstaller --onefile --name gptree cli_tool_gptree/main.py
-        shell: bash
 
-      # Upload artifact
+      # Rename binaries for platform-specific names
+      - name: Rename binaries for upload
+        run: |
+          if [[ "${{ matrix.os }}" == "macos-latest" ]]; then
+            mv dist/gptree dist/gptree-macos
+          elif [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
+            mv dist/gptree dist/gptree-ubuntu
+          elif [[ "${{ matrix.os }}" == "windows-latest" ]]; then
+            mv dist/gptree.exe dist/gptree-windows.exe
+          fi
+
+      # Upload binary as artifact
       - name: Upload binary as artifact
         uses: actions/upload-artifact@v4
         with:
           name: gptree-${{ matrix.os }}
-          path: dist/gptree* # Includes binaries
+          path: |
+            dist/gptree-macos
+            dist/gptree-ubuntu
+            dist/gptree-windows.exe
 
   release:
     name: Create Release
-    needs: build
+    needs: build # Waits for the build job to complete
     runs-on: ubuntu-latest
     permissions:
-      contents: write # Required to create a release and upload assets
+      contents: write # Grants permission to create a release and upload files
     steps:
+      # Checkout repository
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      # Download all artifacts from the build job
       - name: Download all binaries
         uses: actions/download-artifact@v4
         with:
           path: artifacts
 
+      # List downloaded files for debugging
       - name: List downloaded binaries
         run: ls -R artifacts
 
+      # Create GitHub Release and upload binaries
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
         with:
           files: |
-            artifacts/**/*
+            artifacts/gptree-macos
+            artifacts/gptree-ubuntu
+            artifacts/gptree-windows.exe
+          body: "Release of gptree CLI tool.\n\nDownload the appropriate binary for your operating system:"
+          tag_name: ${{ github.ref_name }}
+          name: 'GPTree Release ${{ github.ref_name }}'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
