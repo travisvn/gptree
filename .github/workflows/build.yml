@@ -83,11 +83,8 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
         with:
-          files: |
-            artifacts/gptree-macos
-            artifacts/gptree-ubuntu
-            artifacts/gptree-windows.exe
-          body: "Release of gptree CLI tool.\n\nDownload the appropriate binary for your operating system:"
+          files: artifacts/**/* # Match all files recursively in artifacts/
+          body: "Release of gptree CLI tool.\n\nDownload the appropriate binary for your operating system."
           tag_name: ${{ github.ref_name }}
           name: 'GPTree Release ${{ github.ref_name }}'
         env:
