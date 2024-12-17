@@ -27,6 +27,7 @@ jobs:
 
       # Install dependencies
       - name: Install dependencies
+        shell: bash
         run: |
           python -m pip install --upgrade pip
           pip install pyinstaller pathspec pyperclip
@@ -36,11 +37,12 @@ jobs:
 
       # Build binary with PyInstaller and optimize
       - name: Build executable with PyInstaller
+        shell: bash
         run: |
           if [ "${{ matrix.os }}" = "windows-latest" ]; then
             pyinstaller --onefile --noconsole --name gptree.exe cli_tool_gptree/main.py
           else
-            pyinstaller --onefile --noconsole --name gptree --upx-dir=/usr/bin --no-lzma cli_tool_gptree/main.py
+            pyinstaller --onefile --noconsole --upx-dir=/usr/bin --no-lzma --name gptree cli_tool_gptree/main.py
           fi
 
       # Rename binaries for platform-specific names
