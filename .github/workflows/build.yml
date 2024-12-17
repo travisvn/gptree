@@ -30,11 +30,18 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install pyinstaller pathspec pyperclip
+          if [ "${{ matrix.os }}" != "windows-latest" ]; then
+            sudo apt-get update && sudo apt-get install -y upx
+          fi
 
-      # Build binary with PyInstaller
+      # Build binary with PyInstaller and optimize
       - name: Build executable with PyInstaller
         run: |
-          pyinstaller --onefile --name gptree cli_tool_gptree/main.py
+          if [ "${{ matrix.os }}" = "windows-latest" ]; then
+            pyinstaller --onefile --noconsole --name gptree.exe cli_tool_gptree/main.py
+          else
+            pyinstaller --onefile --noconsole --name gptree --upx-dir=/usr/bin --no-lzma cli_tool_gptree/main.py
+          fi
 
       # Rename binaries for platform-specific names
       - name: Rename binaries for upload
@@ -90,6 +97,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      # Update Homebrew Tap Formula
       - name: Update Homebrew Tap Formula
         run: |
           # Clone the Homebrew tap repository
