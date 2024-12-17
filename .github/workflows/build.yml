@@ -38,12 +38,13 @@ jobs:
 
       # Rename binaries for platform-specific names
       - name: Rename binaries for upload
+        shell: bash # Use Bash explicitly
         run: |
-          if [[ "${{ matrix.os }}" == "macos-latest" ]]; then
+          if [ "${{ matrix.os }}" = "macos-latest" ]; then
             mv dist/gptree dist/gptree-macos
-          elif [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
+          elif [ "${{ matrix.os }}" = "ubuntu-latest" ]; then
             mv dist/gptree dist/gptree-ubuntu
-          elif [[ "${{ matrix.os }}" == "windows-latest" ]]; then
+          elif [ "${{ matrix.os }}" = "windows-latest" ]; then
             mv dist/gptree.exe dist/gptree-windows.exe
           fi
 
