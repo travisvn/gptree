@@ -42,7 +42,7 @@ jobs:
           if [ "${{ matrix.os }}" = "windows-latest" ]; then
             pyinstaller --onefile --noconsole --name gptree.exe cli_tool_gptree/main.py
           else
-            pyinstaller --onefile --noconsole --upx-dir=/usr/bin --no-lzma --name gptree cli_tool_gptree/main.py
+            pyinstaller --onefile --noconsole --upx-dir=/usr/bin --name gptree cli_tool_gptree/main.py
           fi
 
       # Rename binaries for platform-specific names
