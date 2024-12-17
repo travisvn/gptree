@@ -9,14 +9,16 @@ import copy
 CURRENT_VERSION = 'v1.1.0'
 
 SAFE_MODE_MAX_FILES = 30
-SAFE_MODE_MAX_LENGTH = 3000
+SAFE_MODE_MAX_LENGTH = 100_000  # ~25K tokens, reasonable for most LLMs
 
 # Global list of obvious files and directories to ignore
 DEFAULT_IGNORES = {".git", ".vscode", "__pycache__", ".DS_Store", ".idea", ".gitignore"}
 PROJECT_CONFIG_FILE = '.gptree_config'
 OUTPUT_FILE = 'gptree_output.txt'
 
+CONFIG_VERSION = 1  # Increment this when config structure changes
 DEFAULT_CONFIG = {
+    "version": CONFIG_VERSION,  # Add version to default config
     "useGitIgnore": True,
     "includeFileTypes": "*",
     "excludeFileTypes": [],
@@ -158,41 +160,66 @@ def interactive_file_selector(file_list):
     curses.wrapper(draw_menu)
     return selected_files
 
-def combine_files_with_structure(root_dir, use_git_ignore, interactive=False):
+def combine_files_with_structure(root_dir, use_git_ignore, interactive=False, previous_files=None, safe_mode=True):
     """Combine file contents with directory structure."""
     combined_content = []
 
-    # Load .gitignore spec if enabled
     gitignore_spec = load_gitignore(root_dir) if use_git_ignore else None
-
-    # Generate tree structure and initial file list
     tree_structure, file_list = generate_tree_structure(root_dir, gitignore_spec)
 
-    # Add the tree structure at the top
     combined_content.append("# Project Directory Structure:")
     combined_content.append(tree_structure)
     combined_content.append("\n# BEGIN FILE CONTENTS")
 
-    # Interactive file selection
-    if interactive:
+    if previous_files:
+        # Convert relative paths to absolute paths and verify they exist
+        selected_files = set()
+        for rel_path in previous_files:
+            abs_path = os.path.abspath(os.path.join(root_dir, rel_path))
+            if os.path.exists(abs_path) and os.path.isfile(abs_path):
+                selected_files.add(abs_path)
+            else:
+                print(f"Warning: Previously selected file not found: {rel_path}")
+        
+        if not selected_files:
+            raise SystemExit("No valid files found from previous selection")
+    elif interactive:
         selected_files = interactive_file_selector(file_list)
     else:
         selected_files = set(file_list)
 
+    # Add safe mode checks
+    if safe_mode:
+        if len(selected_files) > SAFE_MODE_MAX_FILES:
+            raise SystemExit(
+                f"Safe mode: Too many files selected ({len(selected_files)} > {SAFE_MODE_MAX_FILES})\n"
+                "To override this limit, run the command again with --disable-safe-mode or -dsm"
+            )
+        
+        total_size = 0
+        for file_path in selected_files:
+            total_size += os.path.getsize(file_path)
+            if total_size > SAFE_MODE_MAX_LENGTH:
+                raise SystemExit(
+                    f"Safe mode: Combined file size too large (> {SAFE_MODE_MAX_LENGTH:,} bytes)\n"
+                    "To override this limit, run the command again with --disable-safe-mode or -dsm"
+                )
+
     # Combine contents of selected files
     for file_path in selected_files:
-        # Ensure file is readable in utf-8
         try:
             with open(file_path, "r", encoding="utf-8") as f:
                 content = f.read()
-        except (UnicodeDecodeError, OSError):
+            # Convert absolute path to relative path for display
+            rel_path = os.path.relpath(file_path, root_dir)
+            combined_content.append(f"\n# File: {rel_path}\n")
+            combined_content.append(content)
+            combined_content.append("\n# END FILE CONTENTS\n")
+        except (UnicodeDecodeError, OSError) as e:
+            print(f"Warning: Could not read file {file_path}: {e}")
             continue
 
-        combined_content.append(f"\n# File: {file_path}\n")
-        combined_content.append(content)
-        combined_content.append(f"\n# END FILE CONTENTS\n")
-
-    return "\n".join(combined_content)
+    return "\n".join(combined_content), selected_files
 
 def save_to_file(output_path, content):
     """Save the combined content to a file."""
@@ -225,28 +252,79 @@ def prompt_user_input(prompt, default):
     user_input = input(f"{prompt} [{default}]: ").strip()
     return user_input if user_input else default
 
-def write_config(file_path, isGlobal = False):
+def migrate_config(config, current_version, is_global=False):
+    """Migrate config from older versions to current version."""
+    if "version" not in config:
+        config["version"] = 0
+    else:
+        try:
+            config["version"] = int(config["version"])
+        except ValueError:
+            config["version"] = 0  # If version can't be parsed, assume oldest version
+
+    while config["version"] < current_version:
+        if config["version"] == 0:
+            # Migrate from version 0 to 1
+            if not is_global:
+                config["previousFiles"] = config.get("previousFiles", [])
+            config["version"] = 1
+            print(f"Migrated {'global' if is_global else 'local'} config from version 0 to 1")
+        # Add more elif blocks here for future versions
+        # elif config["version"] == 1:
+        #     # Migrate from version 1 to 2
+        #     config["newSetting"] = "default"
+        #     config["version"] = 2
+
+    return config
+
+def write_config(file_path, isGlobal=False):
+    """Write or update configuration file."""
+    config = copy.deepcopy(DEFAULT_CONFIG)
+    if not isGlobal:
+        config["previousFiles"] = []
+
+    if os.path.exists(file_path):
+        # Read existing config
+        existing_config = {}
+        with open(file_path, "r", encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if line and not line.startswith("#") and ":" in line:
+                    key, value = line.split(":", 1)
+                    existing_config[key.strip()] = value.strip()
+        
+        # Migrate if necessary
+        existing_config = migrate_config(existing_config, CONFIG_VERSION, isGlobal)
+        config.update(existing_config)
+
+    # Write updated config
+    with open(file_path, "w", encoding="utf-8") as f:
+        f.write(f"# GPTree {'Global' if isGlobal else 'Local'} Config\n")
+        f.write(f"version: {config['version']}\n\n")
+        f.write("# Whether to use .gitignore\n")
+        f.write(f"useGitIgnore: {str(config['useGitIgnore']).lower()}\n")
+        f.write("# File types to include (e.g., .py,.js)\n")
+        f.write(f"includeFileTypes: {config['includeFileTypes']}\n")
+        f.write("# File types to exclude when includeFileTypes is '*'\n")
+        f.write(f"excludeFileTypes: {','.join(config['excludeFileTypes']) if isinstance(config['excludeFileTypes'], list) else config['excludeFileTypes']}\n")
+        f.write("# Output file name\n")
+        f.write(f"outputFile: {config['outputFile']}\n")
+        f.write("# Whether to output the file locally or relative to the project directory\n")
+        f.write(f"outputFileLocally: {str(config['outputFileLocally']).lower()}\n")
+        f.write("# Whether to copy the output to the clipboard\n")
+        f.write(f"copyToClipboard: {str(config['copyToClipboard']).lower()}\n")
+        f.write('# Whether to use safe mode (prevent overly large files from being combined)\n')
+        f.write(f"safeMode: {str(config['safeMode']).lower()}\n")
+        f.write("# Whether to store the files chosen in the config file (--save, -s)\n")
+        f.write(f"storeFilesChosen: {str(config['storeFilesChosen']).lower()}\n")
+        if not isGlobal:
+            f.write("# Previously selected files (when using the -s or --save flag previously)\n")
+            current_previous_files = config.get('previousFiles', [])
+            split_previous_files = [f.strip() for f in current_previous_files.split(',')]
+            f.write(f"previousFiles: {','.join(split_previous_files)}\n")
+
     if not os.path.exists(file_path):
-        print(f"Configuration file not found. Creating default {'global' if isGlobal else 'local'} config file...")
-        with open(file_path, "w", encoding="utf-8") as config_file:
-            config_file.write(f"# GPTree {'Global' if isGlobal else 'Local'} Config")
-            config_file.write("# Whether to use .gitignore\n")
-            config_file.write("useGitIgnore: true\n")
-            config_file.write("# File types to include (e.g., .py,.js)\n")
-            config_file.write("includeFileTypes: *\n")
-            config_file.write("# File types to exclude when includeFileTypes is '*'\n")
-            config_file.write("excludeFileTypes: \n")
-            config_file.write("# Output file name\n")
-            config_file.write(f"outputFile: {OUTPUT_FILE}\n")
-            config_file.write("# Whether to output the file locally or relative to the project directory\n")
-            config_file.write("outputFileLocally: true\n")
-            config_file.write("# Whether to copy the output to the clipboard\n")
-            config_file.write("copyToClipboard: false\n")
-            config_file.write("safeMode: true\n")
-            config_file.write("storeFilesChosen: true\n")
-            if not isGlobal:
-                config_file.write("previousFiles: \n")
-        print(f"Default {'global' if isGlobal else 'local'} config file created at {file_path}")
+        print(f"Created new {'global' if isGlobal else 'local'} config file at {file_path}")
     return file_path
 
 def load_or_create_config(root_dir):
@@ -265,26 +343,37 @@ def normalize_file_types(file_types):
 def parse_config(config_path):
     """Parse the configuration file for options and patterns."""
     config = copy.deepcopy(DEFAULT_CONFIG)
+    config["previousFiles"] = []
 
     with open(config_path, "r", encoding="utf-8") as config_file:
         for line in config_file:
             line = line.strip()
-            if line.startswith("useGitIgnore:"):
-                config["useGitIgnore"] = line.split(":", 1)[1].strip().lower() == "true"
-            elif line.startswith("includeFileTypes:"):
-                config["includeFileTypes"] = normalize_file_types(line.split(":", 1)[1].strip())
-            elif line.startswith("excludeFileTypes:"):
-                config["excludeFileTypes"] = normalize_file_types(line.split(":", 1)[1].strip())
-            elif line.startswith("outputFile:"):
-                config["outputFile"] = line.split(":", 1)[1].strip()
-            elif line.startswith("outputFileLocally:"):
-                config["outputFileLocally"] = line.split(":", 1)[1].strip().lower() == "true"
-            elif line.startswith("copyToClipboard:"):
-                config["copyToClipboard"] = line.split(":", 1)[1].strip().lower() == "true"
-            elif line.startswith("safeMode:"):
-                config["safeMode"] = line.split(":", 1)[1].strip().lower() == "true"
-            elif line.startswith("storeFilesChosen:"):
-                config["storeFilesChosen"] = line.split(":", 1)[1].strip().lower() == "true"
+            if line and not line.startswith("#") and ":" in line:
+                key, value = line.split(":", 1)
+                key = key.strip()
+                value = value.strip()
+                
+                if key == "previousFiles":
+                    if value:  # Only split if there's a value
+                        # Split on comma and filter out empty strings
+                        files = [f.strip() for f in value.split(",")]
+                        config["previousFiles"] = [f for f in files if f]
+                elif key == "useGitIgnore":
+                    config["useGitIgnore"] = value.lower() == "true"
+                elif key == "includeFileTypes":
+                    config["includeFileTypes"] = normalize_file_types(value)
+                elif key == "excludeFileTypes":
+                    config["excludeFileTypes"] = normalize_file_types(value)
+                elif key == "outputFile":
+                    config["outputFile"] = value
+                elif key == "outputFileLocally":
+                    config["outputFileLocally"] = value.lower() == "true"
+                elif key == "copyToClipboard":
+                    config["copyToClipboard"] = value.lower() == "true"
+                elif key == "safeMode":
+                    config["safeMode"] = value.lower() == "true"
+                elif key == "storeFilesChosen":
+                    config["storeFilesChosen"] = value.lower() == "true"
 
     return config
 
@@ -295,22 +384,52 @@ def load_global_config():
     result_config_path = write_config(global_config_path, isGlobal=True)
     return parse_config(result_config_path)
 
+def save_files_to_config(config_path, selected_files, root_dir):
+    """Save selected files to config file."""
+    # Convert absolute paths to relative paths and ensure they're properly quoted
+    relative_paths = [os.path.relpath(f, root_dir) for f in selected_files]
+    
+    # Read existing config
+    with open(config_path, 'r') as f:
+        lines = f.readlines()
+    
+    # Update or add previousFiles line - join with single comma, no spaces
+    previous_files_line = f"previousFiles: {','.join(relative_paths)}\n"
+    previous_files_found = False
+    
+    for i, line in enumerate(lines):
+        if line.startswith("previousFiles:"):
+            lines[i] = previous_files_line
+            previous_files_found = True
+            break
+    
+    if not previous_files_found:
+        lines.append(previous_files_line)
+    
+    # Write back to config file
+    with open(config_path, 'w') as f:
+        f.writelines(lines)
+
+def estimate_tokens(text):
+    """Provide a rough estimate of tokens in the text (using ~4 chars per token)."""
+    return len(text) // 4
+
 def main():
     setup_autocomplete()
     parser = argparse.ArgumentParser(description="Provide LLM context for coding projects by combining project files into a single text file (or clipboard text) with directory tree structure")
-    parser.add_argument("path", nargs="?", default=".", help="Root directory of the project.")
-    parser.add_argument("-i", "--interactive", action="store_true", help="Select files interactively.")
-    parser.add_argument("--ignore-gitignore", action="store_true", help="Ignore .gitignore patterns.")
-    parser.add_argument("--include-file-types", help="Comma-separated list of file types to include, e.g., '.py,.js' or 'py,js'. Use '*' for all types.")
-    parser.add_argument("--exclude-file-types", help="Comma-separated list of file types to exclude, e.g., '.log,.tmp' or 'log,tmp'.")
-    parser.add_argument("--output-file", help="Name of the output file.")
-    parser.add_argument("--output-file-locally", action="store_true", help="Save the output file in the current working directory.")
-    parser.add_argument("--no-config", "-nc", action="store_true", help="Disable creation or use of a configuration file.")
-    parser.add_argument("-c", "--copy", action="store_true", help="Copy the output to the clipboard.")
-    parser.add_argument("-p", "--previous", action="store_true", help="Use the previous file selection.")
-    parser.add_argument("-s", "--save", action="store_true", help="Save selected files to config.")
-    parser.add_argument("--version", action="store_true", help="Returns the version of GPTree.")
-    parser.add_argument("--disable-safe-mode", "-dsm", action="store_true", help="Disable safe mode.")
+    parser.add_argument("path", nargs="?", default=".", help="Root directory of the project")
+    parser.add_argument("-i", "--interactive", action="store_true", help="Select files interactively")
+    parser.add_argument("--ignore-gitignore", action="store_true", help="Ignore .gitignore patterns")
+    parser.add_argument("--include-file-types", help="Comma-separated list of file types to include, e.g., '.py,.js' or 'py,js'. Use '*' for all types")
+    parser.add_argument("--exclude-file-types", help="Comma-separated list of file types to exclude, e.g., '.log,.tmp' or 'log,tmp'")
+    parser.add_argument("--output-file", help="Name of the output file")
+    parser.add_argument("--output-file-locally", action="store_true", help="Save the output file in the current working directory")
+    parser.add_argument("--no-config", "-nc", action="store_true", help="Disable creation or use of a configuration file")
+    parser.add_argument("-c", "--copy", action="store_true", help="Copy the output to the clipboard")
+    parser.add_argument("-p", "--previous", action="store_true", help="Use the previous file selection")
+    parser.add_argument("-s", "--save", action="store_true", help="Save selected files to config")
+    parser.add_argument("--version", action="store_true", help="Returns the version of GPTree")
+    parser.add_argument("--disable-safe-mode", "-dsm", action="store_true", help="Disable safe mode")
 
     args = parser.parse_args()
 
@@ -344,12 +463,6 @@ def main():
     if args.disable_safe_mode:
         config["safeMode"] = False
 
-    # Implement "previous" argument
-    #   Check local config file for CSV of previousFiles line & use these instead of selecting files
-    #       (add new argument to combine_files_with_structure for this and create combined_content accordingly)
-    if args.previous:
-        pass
-
     # Determine output file path
     output_file = config["outputFile"]
     if not config["outputFileLocally"]:
@@ -358,26 +471,43 @@ def main():
     # Determine whether to use .gitignore based on config and CLI arguments
     use_gitignore = not args.ignore_gitignore and config["useGitIgnore"]
 
-    # Implement safe mode measures — max num of files, max size of combined_content before exiting
-    #   Probably pass safeMode config to combine_files_with_structure() so it can exit if need-be
-
     try:
         print(f"Combining files in {path} into {output_file}...")
-        combined_content = combine_files_with_structure(path, use_gitignore, interactive=args.interactive)
+        
+        previous_files = None
+        if args.previous and not args.no_config:
+            previous_files = config.get("previousFiles", [])
+            if not previous_files:
+                print("No previous file selection found.")
+                return
+        
+        combined_content, selected_files = combine_files_with_structure(
+            path, 
+            use_gitignore, 
+            interactive=args.interactive,
+            previous_files=previous_files,
+            safe_mode=config["safeMode"]
+        )
+
+        # Add token estimation
+        estimated_tokens = estimate_tokens(combined_content)
+        print(f"Estimated tokens: {estimated_tokens:,}")
+        
     except SystemExit as e:
         print(str(e))
-        return  # Exit without saving
+        return
 
     # Save to file
-    save_to_file(config["outputFile"], combined_content)
+    save_to_file(output_file, combined_content)
 
-    # Copy to clipboard if the flag is set or the config specifies it
+    # Copy to clipboard if requested
     if args.copy or config.get("copyToClipboard", False):
         copy_to_clipboard(combined_content)
 
-    if config["storeFilesChosen"]:
-        # Implement saving files (with relative path) as comma-separated-values to the local config file
-        pass
+    # Save selected files if requested
+    if config["storeFilesChosen"] and not args.no_config and not args.previous:
+        config_path = os.path.join(path, PROJECT_CONFIG_FILE)
+        save_files_to_config(config_path, selected_files, path)
 
     print(f"Done! Combined content saved to {output_file}.")
 
