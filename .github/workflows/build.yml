@@ -89,3 +89,62 @@ jobs:
           name: 'GPTree Release ${{ github.ref_name }}'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Update Homebrew Tap Formula
+        run: |
+          # Clone the Homebrew tap repository
+          git clone https://github.com/travisvn/homebrew-tap.git
+          cd homebrew-tap
+
+          # Define variables for version and compute SHA256 checksums
+          VERSION=${{ github.ref_name }}
+          MACOS_URL="https://github.com/travisvn/gptree/releases/download/${VERSION}/gptree-macos"
+          LINUX_URL="https://github.com/travisvn/gptree/releases/download/${VERSION}/gptree-ubuntu"
+
+          # Calculate SHA256 checksums
+          MACOS_SHA=$(curl -L $MACOS_URL | shasum -a 256 | cut -d' ' -f1)
+          LINUX_SHA=$(curl -L $LINUX_URL | shasum -a 256 | cut -d' ' -f1)
+
+          echo "MacOS SHA256: $MACOS_SHA"
+          echo "Linux SHA256: $LINUX_SHA"
+
+          # Update the gptree.rb formula
+          cat <<EOF > Formula/gptree.rb
+          class Gptree < Formula
+            desc "Project tree structure and file content aggregator for providing LLM context"
+            homepage "https://github.com/travisvn/gptree"
+            license "MIT"
+            version "${VERSION}"
+
+            on_macos do
+              url "${MACOS_URL}"
+              sha256 "${MACOS_SHA}"
+            end
+
+            on_linux do
+              url "${LINUX_URL}"
+              sha256 "${LINUX_SHA}"
+            end
+
+            def install
+              if OS.mac?
+                bin.install "gptree-macos" => "gptree"
+              elsif OS.linux?
+                bin.install "gptree-ubuntu" => "gptree"
+              end
+            end
+
+            test do
+              assert_match "usage", shell_output("#{bin}/gptree --help")
+            end
+          end
+          EOF
+
+          # Commit and push the changes
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add Formula/gptree.rb
+          git commit -m "Update gptree formula to version ${VERSION}"
+          git push https://x-access-token:${{ secrets.HOMEBREW_TAP_TOKEN }}@github.com/travisvn/homebrew-tap.git main
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
