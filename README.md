@@ -27,16 +27,18 @@ The resulting file can easily be copied and pasted into LLM prompts to provide t
 - ✅ **Smart File Selection**: Automatically excludes ignored files using `.gitignore` and common directories like `.git`, `__pycache__`, and `.vscode`.
 - 🎛 **Interactive Mode**: Select or deselect files interactively using arrow keys, with the ability to quit immediately by pressing `ESC`.
 - 🌍 **Global Config Support**: Define default settings in a `~/.gptreerc` file.
-- 🔧 **Directory-Specific Config**: Customize behavior for each project via a `.combine_config` file.
+- 🔧 **Directory-Specific Config**: Customize behavior for each project via a `.gptree_config` file.
 - 🎛 **CLI Overrides**: Fine-tune settings directly in the CLI for maximum control.
-- 📜 **Easy Output**: Combines all selected files into a single text file, ready to paste into an LLM prompt _or_ have the output automatically copied to clipboard.
+- 📜 **Safe Mode**: Prevent overly large files from being combined by limiting file count and total size.
+- 📋 **Clipboard Support**: Automatically copy output to clipboard if desired.
+- 🛠 **Custom Configuration Management**: Define configurations that are auto-detected per project or globally.
 
 ## Installation
 
 ### Install via Homebrew (recommended)
 Once the Homebrew tap is ready, install `gptree` with:
 ```bash
-brew tap travisvn/gptree
+brew tap travisvn/tap
 brew install gptree
 ```
 
@@ -54,7 +56,7 @@ Run `gptree` in your project directory:
 gptree
 ```
 
-### Options:
+### Options
 
 | Flag                        | Description                                                                 |
 |-----------------------------|-----------------------------------------------------------------------------|
@@ -66,45 +68,30 @@ gptree
 | `--output-file-locally`     | Save the output file in the current working directory                      |
 | `--no-config`, `-nc`        | Disable creation or use of configuration files                             |
 | `--ignore-gitignore`        | Ignore `.gitignore` patterns                                               |
+| `--disable-safe-mode`, `-dsm` | Disable safe mode checks for file count or size                          |
+| `--previous`, `-p`          | Use the previously saved file selection                                   |
+| `--save`, `-s`              | Save the selected files to the configuration                              |
+| `--version`                 | Display the current version of GPTree                                     |
 | `path`                      | (Optional) Root directory of your project. Defaults to `.`                 |
 
-### Example:
+### Examples
 
 Interactive file selection with custom file types:
 ```bash
 gptree --interactive --include-file-types '.py,.js'
 ```
 
-Disable configuration files:
+Save current selection to config:
 ```bash
-gptree --no-config
+gptree --interactive --save
 ```
 
-## Example Output
-
-Running `gptree` generates a file like this:
-
-```text
-# Project Directory Structure:
-├── src/
-    ├── main.py
-    ├── utils.py
-├── .gitignore
-├── README.md
-├── requirements.txt
-
-# BEGIN FILE CONTENTS
-
-# File: src/main.py
-def main():
-    print("Hello, world!")
-
-# File: src/utils.py
-def add(a, b):
-    return a + b
-
-# END FILE CONTENTS
+Re-use previously saved file selections and copy to clipboard:
+```bash
+gptree --previous --copy
 ```
+
+---
 
 ## Configuration
 
@@ -114,37 +101,51 @@ Define your global defaults in `~/.gptreerc` to avoid repetitive setup across pr
 
 ```yaml
 # ~/.gptreerc
+version: 1
 useGitIgnore: true
 includeFileTypes: .py,.js  # Include only Python and JavaScript files
 excludeFileTypes: .log,.tmp  # Exclude log and temporary files
-outputFile: default_combined.txt
+outputFile: gptree_output.txt
 outputFileLocally: true
 copyToClipboard: false
+safeMode: true
+storeFilesChosen: true
 ```
 
 This file is automatically created with default settings if it doesn't exist.
 
-### Directory Config (`.combine_config`)
+### Directory Config (`.gptree_config`)
 
-Customize settings for a specific project by adding a `.combine_config` file to your project root. Example:
+Customize settings for a specific project by adding a `.gptree_config` file to your project root. Example:
 
 ```yaml
-# .combine_config
+# .gptree_config
+version: 1
 useGitIgnore: false
 includeFileTypes: *  # Include all file types
 excludeFileTypes: .test  # Exclude test files
-outputFile: project_combined.txt
+outputFile: gptree_output.txt
 outputFileLocally: false
 copyToClipboard: true
+safeMode: false
+storeFilesChosen: false
 ```
 
 ### Configuration Precedence
 
 Settings are applied in the following order (highest to lowest precedence):
 1. **CLI Arguments**: Always override other settings.
-2. **Directory Config**: Project-specific settings in `.combine_config`.
-3. **Global Config**: User-defined defaults in `~/.gptreerc`.
+2. **Global Config**: User-defined defaults in `~/.gptreerc`.
+3. **Directory Config**: Project-specific settings in `.gptree_config`.
 4. **Programmed Defaults**: Built-in defaults used if no other settings are provided.
+
+## Safe Mode
+
+To prevent overly large files from being combined, Safe Mode restricts:
+- The **total number of files** (default: 30).
+- The **combined file size** (default: ~25k tokens, ~100,000 bytes).
+
+Override Safe Mode with `--disable-safe-mode`.
 
 ## Interactive Mode
 
