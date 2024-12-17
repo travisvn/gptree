@@ -91,8 +91,6 @@ Re-use previously saved file selections and copy to clipboard:
 gptree --previous --copy
 ```
 
----
-
 ## Configuration
 
 ### Global Config (`~/.gptreerc`)
