@@ -174,3 +174,5 @@ venv
 
 combined_code.txt
 .combine_config
+
+.DS_Store
