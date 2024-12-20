@@ -138,21 +138,43 @@ jobs:
             license "MIT"
             version "${VERSION}"
 
-            on_macos do
-              url "${MACOS_URL}"
-              sha256 "${MACOS_SHA}"
-            end
-
-            on_linux do
-              url "${LINUX_URL}"
-              sha256 "${LINUX_SHA}"
-            end
+            depends_on "python@3.9" => :optional
 
             def install
+              if system("which pip3")
+                # Attempt to install via pip
+                pip_success = system("pip3", "install", "gptree-cli==${VERSION}", "--prefix=#{prefix}")
+                unless pip_success
+                  opoo "pip3 installation failed. Falling back to binary installation."
+                  download_and_install_binary
+                end
+              else
+                # Fallback to binary installation if pip3 isn't available
+                download_and_install_binary
+              end
+            end
+
+            def download_and_install_binary
               if OS.mac?
-                bin.install "gptree-macos" => "gptree"
+                url = "${MACOS_URL}"
+                sha256 = "${MACOS_SHA}"
+                fetch_and_install(url, sha256, "gptree-macos")
               elsif OS.linux?
-                bin.install "gptree-ubuntu" => "gptree"
+                url = "${LINUX_URL}"
+                sha256 = "${LINUX_SHA}"
+                fetch_and_install(url, sha256, "gptree-ubuntu")
+              end
+            end
+
+            def fetch_and_install(url, sha256, filename)
+              # Download the file manually
+              resource filename do
+                url url
+                sha256 sha256
+              end
+
+              resource(filename).stage do
+                bin.install filename => "gptree"
               end
             end
 
