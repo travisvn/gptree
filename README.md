@@ -35,16 +35,9 @@ The resulting file can easily be copied and pasted into LLM prompts to provide t
 
 ## Installation
 
-### Install via Homebrew 🍺 (easiest)
+### Install via Homebrew 🍺 (recommended)
 ```bash
 brew tap travisvn/tap
-brew install gptree
-```
-
-#### Better performance option (recommended)
-If you have `pip` 🐍 and `brew` (Homebrew) 🍺 installed on your machine already, a more performant version of `gptree` is available at a different tap:
-```bash
-brew tap travisvn/gptree
 brew install gptree
 ```
 
