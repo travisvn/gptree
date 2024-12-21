@@ -7,6 +7,7 @@
 ![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/travisvn/gptree/.github%2Fworkflows%2Fbuild.yml)
 ![GitHub Release](https://img.shields.io/github/v/release/travisvn/gptree)
 ![GitHub last commit](https://img.shields.io/github/last-commit/travisvn/gptree?color=red)
+[![PyPI Downloads](https://static.pepy.tech/badge/gptree-cli)](https://pepy.tech/projects/gptree-cli)
 ![Hits](https://hits.seeyoufarm.com/api/count/incr/badge.svg?url=https%3A%2F%2Fgithub.com%2Ftravisvn%2Fgptree&count_bg=%2379C83D&title_bg=%23555555&icon=&icon_color=%23E7E7E7&title=hits&edge_flat=false)
 
 ## What is gptree?
