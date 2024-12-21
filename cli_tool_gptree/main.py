@@ -6,7 +6,7 @@ import curses
 import pyperclip
 import copy
 
-CURRENT_VERSION = 'v1.1.1'
+CURRENT_VERSION = 'v1.1.2'
 
 SAFE_MODE_MAX_FILES = 30
 SAFE_MODE_MAX_LENGTH = 100_000  # ~25K tokens, reasonable for most LLMs
@@ -319,8 +319,18 @@ def write_config(file_path, isGlobal=False):
         f.write(f"storeFilesChosen: {str(config['storeFilesChosen']).lower()}\n")
         if not isGlobal:
             f.write("# Previously selected files (when using the -s or --save flag previously)\n")
+
             current_previous_files = config.get('previousFiles', [])
+            if isinstance(current_previous_files, list):
+                # Convert the list to a comma-separated string
+                current_previous_files = ','.join(current_previous_files)
+            elif not isinstance(current_previous_files, str):
+                # If it's not a list or a string, raise an error
+                raise ValueError("Invalid type for 'previousFiles'. Expected a string or list.")
+
+            # Now safely split the string
             split_previous_files = [f.strip() for f in current_previous_files.split(',')]
+
             f.write(f"previousFiles: {','.join(split_previous_files)}\n")
 
     if not os.path.exists(file_path):
