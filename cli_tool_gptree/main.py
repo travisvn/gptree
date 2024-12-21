@@ -6,7 +6,7 @@ import curses
 import pyperclip
 import copy
 
-CURRENT_VERSION = 'v1.1.2'
+CURRENT_VERSION = 'v1.1.3'
 
 SAFE_MODE_MAX_FILES = 30
 SAFE_MODE_MAX_LENGTH = 100_000  # ~25K tokens, reasonable for most LLMs
