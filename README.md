@@ -1,4 +1,4 @@
-# gptree
+# gptree 🌳
 
 **A CLI tool to provide LLM context for coding projects by combining project files into a single text file with a directory tree structure.**
 
@@ -35,11 +35,20 @@ The resulting file can easily be copied and pasted into LLM prompts to provide t
 
 ## Installation
 
-### Install via Homebrew 🍺 (recommended)
+### Install via `pipx` 📦 (Recommended)
+```bash
+pipx install gptree-cli
+```
+
+[How to setup pipx](https://pipx.pypa.io/)
+
+### Install via Homebrew 🍺
 ```bash
 brew tap travisvn/tap
 brew install gptree
 ```
+
+Homebrew will attempt to install `gptree` using `pip3` and will fall back to binary installation otherwise
 
 ### Install via pip 🐍
 Alternatively, install `gptree` (`gptree-cli`) directly via [pip](https://pypi.org/project/gptree-cli/):
@@ -47,12 +56,10 @@ Alternatively, install `gptree` (`gptree-cli`) directly via [pip](https://pypi.o
 pip install gptree-cli
 ```
 
-You can also try `pipx` 
-
 > [!NOTE]
-> Performance is better when installing directly with Python
-> 
-> The `brew tap travisvn/tap` version is a pre-compiled binary whereas `brew tap travisvn/gptree` installs via `pip`
+> Performance is better when installing directly with Python (`pipx` or `pip`)
+>
+> The binary installation might take a second or two longer to start up (not a huge deal — just something to note)
 
 ## Usage
 
