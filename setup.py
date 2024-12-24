@@ -2,11 +2,11 @@ from setuptools import setup, find_packages
 
 setup(
     name="gptree-cli",
-    version="1.1.3",
+    version="1.1.4",
     author="Travis Van Nimwegen",
     author_email="cli@travisvn.com",
     description="A CLI tool to provide LLM context for coding projects by combining project files into a single text file (or clipboard text) with directory tree structure",
-    license="MIT",
+    license="GPLv3",
     url="https://github.com/travisvn/gptree",
     long_description=open("README.md").read(),
     long_description_content_type="text/markdown",
@@ -22,7 +22,7 @@ setup(
     },
     classifiers=[
         "Programming Language :: Python :: 3",
-        "License :: OSI Approved :: MIT License",
+        "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
         "Operating System :: OS Independent",
     ],
     python_requires='>=3.7',

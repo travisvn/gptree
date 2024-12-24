@@ -138,7 +138,7 @@ jobs:
             desc "Project tree structure and file content aggregator for providing LLM context"
             homepage "https://github.com/travisvn/gptree"
             version "${VERSION}"
-            license "MIT"
+            license "GPLv3"
 
             depends_on "python" => :optional
 

@@ -175,15 +175,8 @@ In interactive mode, use the following controls:
 
 ## Contributing
 
-1. Fork this repository.
-2. Clone your fork and create a new branch:
-   ```bash
-   git clone https://github.com/travisvn/gptree.git
-   cd gptree
-   git checkout -b feature-name
-   ```
-3. Submit a pull request with your changes.
+Contributions are welcome! Please fork the repository and create a pull request for any improvements.
 
 ## License
 
-This project is licensed under the MIT License.
+This project is licensed under GNU General Public License v3.0 (GPL-3.0).
