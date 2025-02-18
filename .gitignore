@@ -178,3 +178,5 @@ combined_code.txt
 .DS_Store
 .gptree_config
 gptree_output.txt
+
+.test_storage/

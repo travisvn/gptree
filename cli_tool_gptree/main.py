@@ -6,7 +6,7 @@ import curses
 import pyperclip
 import copy
 
-CURRENT_VERSION = 'v1.1.4'
+CURRENT_VERSION = 'v1.2.0'
 
 SAFE_MODE_MAX_FILES = 30
 SAFE_MODE_MAX_LENGTH = 100_000  # ~25K tokens, reasonable for most LLMs
@@ -30,44 +30,60 @@ DEFAULT_CONFIG = {
 }
 
 def generate_tree_structure(root_dir, gitignore_spec):
-    """Generate a tree-like directory structure, excluding ignored files and directories."""
-    tree_lines = []
+    """Generate a tree-like directory structure, mimicking the 'tree' command output
+       with correct characters, indentation, and alphabetical ordering."""
+    tree_lines = ['.']  # Start with the root directory indicator
     file_list = []
 
-    for root, dirs, files in os.walk(root_dir):
-        # Filter directories to skip ignored ones
-        dirs[:] = [
-            d for d in dirs
-            if not is_ignored(os.path.join(root, d), gitignore_spec, root_dir)
-        ]
+    def _generate_tree(dir_path, indent_prefix):
+        items = sorted([item for item in os.listdir(dir_path)
+                       if not is_ignored(os.path.join(dir_path, item), gitignore_spec, root_dir)])
+        num_items = len(items)
 
-        # Skip the current directory if it is ignored
-        if is_ignored(root, gitignore_spec, root_dir) or is_ignored(os.path.basename(root) + '/', gitignore_spec, root_dir):
-            continue
+        for index, item in enumerate(items):
+            is_last_item = (index == num_items - 1)
+            item_path = os.path.join(dir_path, item)
+            is_directory = os.path.isdir(item_path)
 
-        # Add the current directory to the tree
-        level = root.replace(root_dir, '').count(os.sep)
-        indent = '    ' * level
-        tree_lines.append(f"{indent}├── {os.path.basename(root)}/")
-        sub_indent = '    ' * (level + 1)
+            # Connector: └── for last item, ├── otherwise
+            connector = '└── ' if is_last_item else '├── '
+            line_prefix = indent_prefix + connector
+            item_display_name = item + "/" if is_directory else item # Append "/" for directories
 
-        # Filter files and add them to the tree
-        for file in files:
-            file_path = os.path.join(root, file)
-            if is_ignored(file_path, gitignore_spec, root_dir):
-                continue
-            tree_lines.append(f"{sub_indent}├── {file}")
-            file_list.append(file_path)
+            tree_lines.append(line_prefix + item_display_name) # No prepended "|"
+
+            if is_directory:
+                # Indentation for subdirectories: '    ' if last item, '│   ' otherwise
+                new_indent_prefix = indent_prefix + ('    ' if is_last_item else '│   ')
+                _generate_tree(item_path, new_indent_prefix)
+            elif os.path.isfile(item_path):
+                file_list.append(item_path)
+
+    _generate_tree(root_dir, '')
 
     return "\n".join(tree_lines), file_list
 
-def load_gitignore(root_dir):
-    """Load patterns from .gitignore if it exists."""
-    gitignore_path = os.path.join(root_dir, ".gitignore")
-    if os.path.exists(gitignore_path):
-        with open(gitignore_path, "r", encoding="utf-8") as f:
+def load_gitignore(start_dir):
+    """Load patterns from .gitignore by searching in the start directory and its parents,
+       using os.path.abspath for path handling."""
+    current_dir = os.path.abspath(start_dir) # Convert start_dir to absolute path
+
+    while current_dir != os.path.dirname(current_dir):  # Stop at the root directory
+        gitignore_path = os.path.join(current_dir, ".gitignore")
+        if os.path.exists(gitignore_path):
+            print(f"Found .gitignore in: {current_dir}")
+            with open(gitignore_path, "r", encoding="utf-8") as f:
+                return pathspec.PathSpec.from_lines(pathspec.patterns.GitWildMatchPattern, f)
+        current_dir = os.path.dirname(current_dir) # Move to parent directory (still absolute path)
+
+    # Check for .gitignore in the root directory as a last resort
+    root_gitignore_path = os.path.join(current_dir, ".gitignore") # current_dir is now root path
+    if os.path.exists(root_gitignore_path):
+        print(f"Found .gitignore in root directory: {current_dir}")
+        with open(root_gitignore_path, "r", encoding="utf-8") as f:
             return pathspec.PathSpec.from_lines(pathspec.patterns.GitWildMatchPattern, f)
-    return None
+
+    return None  # No .gitignore found
 
 def is_ignored(file_or_dir_path, gitignore_spec, root_dir):
     """Check if a file or directory is ignored by .gitignore or default ignores."""
