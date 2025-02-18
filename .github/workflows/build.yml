@@ -166,7 +166,7 @@ jobs:
               python_path = \`which python3\`.chomp
               pip_path = \`which pip3\`.chomp
 
-              if !python_path.empty? && !pip_path.empty? && system("\#{python_path}", "--version") && system("\#{pip_path}", "--version")
+              if !python_path.empty? && !pip_path.empty? && system("#{python_path}", "--version") && system("#{pip_path}", "--version")
                 opoo "Python and pip detected. Installing with pip."
                 ENV.prepend_path "PATH", File.dirname(python_path) # Ensure the detected Python is prioritized
                 virtualenv_install_with_resources
