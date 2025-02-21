@@ -27,6 +27,7 @@ DEFAULT_CONFIG = {
     "copyToClipboard": False,
     "safeMode": True,
     "storeFilesChosen": True,
+    "lineNumbers": False,
 }
 
 def generate_tree_structure(root_dir, gitignore_spec):
@@ -226,6 +227,11 @@ def combine_files_with_structure(root_dir, use_git_ignore, interactive=False, pr
         try:
             with open(file_path, "r", encoding="utf-8") as f:
                 content = f.read()
+            
+            # Add line numbers if requested
+            if config["lineNumbers"]:
+                content = add_line_numbers(content)
+            
             # Convert absolute path to relative path for display
             rel_path = os.path.relpath(file_path, root_dir)
             combined_content.append(f"\n# File: {rel_path}\n")
@@ -333,6 +339,8 @@ def write_config(file_path, isGlobal=False):
         f.write(f"safeMode: {str(config['safeMode']).lower()}\n")
         f.write("# Whether to store the files chosen in the config file (--save, -s)\n")
         f.write(f"storeFilesChosen: {str(config['storeFilesChosen']).lower()}\n")
+        f.write("# Whether to include line numbers in the output (--line-numbers, -n)\n")
+        f.write(f"lineNumbers: {str(config['lineNumbers']).lower()}\n")
         if not isGlobal:
             f.write("# Previously selected files (when using the -s or --save flag previously)\n")
 
@@ -400,6 +408,8 @@ def parse_config(config_path):
                     config["safeMode"] = value.lower() == "true"
                 elif key == "storeFilesChosen":
                     config["storeFilesChosen"] = value.lower() == "true"
+                elif key == "lineNumbers":
+                    config["lineNumbers"] = value.lower() == "true"
 
     return config
 
@@ -454,6 +464,7 @@ def main():
     parser.add_argument("-c", "--copy", action="store_true", help="Copy the output to the clipboard")
     parser.add_argument("-p", "--previous", action="store_true", help="Use the previous file selection")
     parser.add_argument("-s", "--save", action="store_true", help="Save selected files to config")
+    parser.add_argument("-n", "--line-numbers", action="store_true", help="Add line numbers to the output")
     parser.add_argument("--version", action="store_true", help="Returns the version of GPTree")
     parser.add_argument("--disable-safe-mode", "-dsm", action="store_true", help="Disable safe mode")
 
@@ -486,6 +497,8 @@ def main():
         config["outputFileLocally"] = True
     if args.save:
         config["storeFilesChosen"] = True
+    if args.line_numbers:
+        config["lineNumbers"] = True
     if args.disable_safe_mode:
         config["safeMode"] = False
 
