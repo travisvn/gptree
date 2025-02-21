@@ -167,7 +167,7 @@ In interactive mode, use the following controls:
 
 | Key         | Action                              |
 |-------------|-------------------------------------|
-| `↑/↓`       | Navigate the file list              |
+| `↑/↓/j/k`   | Navigate the file list              |
 | `SPACE`     | Toggle selection of the current file |
 | `a`         | Select or deselect all files        |
 | `ENTER`     | Confirm the selection and proceed   |
