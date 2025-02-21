@@ -118,7 +118,7 @@ def interactive_file_selector(file_list):
 
         while True:
             stdscr.clear()
-            stdscr.addstr(0, 0, "Use ↑/↓ to scroll, SPACE to toggle selection, 'a' to select all, ENTER to confirm, ESC to quit")
+            stdscr.addstr(0, 0, "Use ↑/↓/j/k to scroll, SPACE to toggle selection, 'a' to select all, ENTER to confirm, ESC to quit")
             stdscr.addstr(1, 0, "-" * 80)
 
             for idx in range(display_limit):
@@ -147,12 +147,12 @@ def interactive_file_selector(file_list):
             stdscr.addstr(display_limit + 4, 0, f"Selected: {len(selected_files)} / {len(file_list)}")
 
             key = stdscr.getch()
-            if key == curses.KEY_DOWN:
+            if key in (curses.KEY_DOWN, ord('j')):
                 if current_row < max_rows - 1:
                     current_row += 1
                     if current_row >= offset + display_limit:
                         offset += 1
-            elif key == curses.KEY_UP:
+            elif key in (curses.KEY_UP, ord('k')):
                 if current_row > 0:
                     current_row -= 1
                     if current_row < offset:
