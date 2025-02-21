@@ -183,7 +183,7 @@ def interactive_file_selector(file_list):
     curses.wrapper(draw_menu)
     return selected_files
 
-def combine_files_with_structure(root_dir, use_git_ignore, interactive=False, previous_files=None, safe_mode=True, config=None):
+def combine_files_with_structure(root_dir, use_git_ignore, interactive=False, previous_files=None, safe_mode=True, line_numbers=False):
     """Combine file contents with directory structure."""
     combined_content = []
 
@@ -235,7 +235,7 @@ def combine_files_with_structure(root_dir, use_git_ignore, interactive=False, pr
                 content = f.read()
 
             # Add line numbers if requested
-            if config and config["lineNumbers"]:
+            if line_numbers:
                 content = add_line_numbers(content)
 
             # Convert absolute path to relative path for display
@@ -527,12 +527,12 @@ def main():
                 return
         
         combined_content, selected_files = combine_files_with_structure(
-            path, 
-            use_gitignore, 
+            path,
+            use_gitignore,
             interactive=args.interactive,
             previous_files=previous_files,
             safe_mode=config["safeMode"],
-            config=config
+            line_numbers=config["lineNumbers"]
         )
 
         # Add token estimation
