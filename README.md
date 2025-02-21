@@ -85,6 +85,7 @@ Or run it anywhere and define the relative path to your project
 | `--no-config`, `-nc`        | Disable creation or use of configuration files                             |
 | `--ignore-gitignore`        | Ignore `.gitignore` patterns                                               |
 | `--disable-safe-mode`, `-dsm` | Disable safe mode checks for file count or size                          |
+| `--line-numbers`, `-n`      | Add line numbers to the output                                            |
 | `--previous`, `-p`          | Use the previously saved file selection                                   |
 | `--save`, `-s`              | Save the selected files to the configuration                              |
 | `--version`                 | Display the current version of GPTree                                     |
@@ -123,6 +124,7 @@ outputFile: gptree_output.txt
 outputFileLocally: true
 copyToClipboard: false
 safeMode: true
+lineNumbers: false
 storeFilesChosen: true
 ```
 
@@ -142,6 +144,7 @@ outputFile: gptree_output.txt
 outputFileLocally: false
 copyToClipboard: true
 safeMode: false
+lineNumbers: false
 storeFilesChosen: false
 ```
 
