@@ -103,6 +103,12 @@ def is_ignored(file_or_dir_path, gitignore_spec, root_dir):
 
     return False
 
+def add_line_numbers(content):
+    """Add line numbers to the content."""
+    lines = content.splitlines()
+    numbered_lines = [f"{i + 1:4d} | {line}" for i, line in enumerate(lines)]
+    return "\n".join(numbered_lines)
+
 def interactive_file_selector(file_list):
     """Interactive file selector with a scrollable list using curses."""
     selected_files = set()
