@@ -6,13 +6,89 @@ import curses
 import pyperclip
 import copy
 
-CURRENT_VERSION = 'v1.3.0'
+CURRENT_VERSION = 'v1.3.1'
 
 SAFE_MODE_MAX_FILES = 30
 SAFE_MODE_MAX_LENGTH = 100_000  # ~25K tokens, reasonable for most LLMs
 
 # Global list of obvious files and directories to ignore
-DEFAULT_IGNORES = {".git", ".vscode", "__pycache__", ".DS_Store", ".idea", ".gitignore"}
+# Directories typically containing dependencies, caches, or generated artifacts
+DEFAULT_IGNORED_DIRS = {
+    ".git", ".vscode", "__pycache__", ".DS_Store", ".idea", ".gitignore",
+
+    # JavaScript/TypeScript/Frontend
+    "node_modules", "bower_components", "jspm_packages", "dist", "out", "build", ".cache",
+
+    # Python
+    ".venv", "env", "venv", ".pytest_cache", "__pycache__", "htmlcov",
+
+    # Rust
+    "target",
+
+    # Go
+    "vendor", "bin", "pkg",
+
+    # Ruby
+    ".bundle", "vendor/bundle",
+
+    # PHP
+    "vendor",
+
+    # Swift/Objective-C
+    "Pods", "Carthage",
+
+    # Java/Kotlin
+    "build", "out", "target",
+
+    # iOS/macOS
+    "Pods", "Carthage", "DerivedData",
+
+    # Coverage and test artifacts
+    "coverage", "htmlcov", ".nyc_output"
+}
+
+# Lock files, generated config, or metadata files usually not useful for code content
+DEFAULT_IGNORED_FILES = {
+    # Node.js
+    "package-lock.json", "yarn.lock", "pnpm-lock.yaml",
+
+    # Python
+    "Pipfile.lock", "poetry.lock", "requirements.txt", ".pdm.toml",
+
+    # Ruby
+    "Gemfile.lock",
+
+    # PHP
+    "composer.lock",
+
+    # Java (Maven/Gradle)
+    "pom.xml.lock", "gradle.lockfile",
+
+    # Swift/Objective-C
+    "Podfile.lock", "Cartfile.resolved",
+
+    # Rust
+    "Cargo.lock",
+
+    # Node-related
+    "package-lock.json", "yarn.lock", "pnpm-lock.yaml",
+
+    # Config files unrelated to direct code logic
+    ".env", ".env", ".env.local", ".env.development", ".env.test", ".env.production",
+    "docker-compose.override.yml", ".dockerignore", ".editorconfig", ".eslintrc", ".eslintrc.js", ".eslintrc.json",
+    "babel.config.js", "webpack.config.js", ".prettierrc", ".prettierrc", ".prettierrc.json",
+    ".gitattributes", ".gitmodules", ".gitkeep",
+
+    # IDE specific
+    ".vscode/settings.json", ".idea/workspace.xml", ".idea/modules.xml",
+
+    # Miscellaneous generated or meta files
+    "yarn-error.log", "npm-debug.log", "package-lock.json", "yarn.lock", "pnpm-lock.yaml",
+
+    # CI/CD configurations
+    ".github", ".circleci", ".travis.yml", "jenkinsfile", ".gitlab-ci.yml",
+}
+
 PROJECT_CONFIG_FILE = '.gptree_config'
 OUTPUT_FILE = 'gptree_output.txt'
 
@@ -91,8 +167,12 @@ def is_ignored(file_or_dir_path, gitignore_spec, root_dir):
     # Normalize the path relative to the root directory
     relative_path = os.path.relpath(file_or_dir_path, root_dir)
 
-    # Check if it's in the default ignore list (e.g., ".git", "__pycache__")
-    if any(segment in DEFAULT_IGNORES for segment in relative_path.split(os.sep)):
+    # Check if it's in the default ignored directories
+    if os.path.isdir(file_or_dir_path) and any(segment in DEFAULT_IGNORED_DIRS for segment in relative_path.split(os.sep)):
+        return True
+    
+    # Check if it's in the excluded files list
+    if os.path.isfile(file_or_dir_path) and os.path.basename(file_or_dir_path) in DEFAULT_IGNORED_FILES:
         return True
 
     # Check against .gitignore if a spec is provided
