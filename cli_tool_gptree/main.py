@@ -6,7 +6,7 @@ import curses
 import pyperclip
 import copy
 
-CURRENT_VERSION = 'v1.3.0'
+CURRENT_VERSION = 'v1.4.0'
 
 SAFE_MODE_MAX_FILES = 30
 SAFE_MODE_MAX_LENGTH = 100_000  # ~25K tokens, reasonable for most LLMs
@@ -16,7 +16,7 @@ DEFAULT_IGNORES = {".git", ".vscode", "__pycache__", ".DS_Store", ".idea", ".git
 PROJECT_CONFIG_FILE = '.gptree_config'
 OUTPUT_FILE = 'gptree_output.txt'
 
-CONFIG_VERSION = 1  # Increment this when config structure changes
+CONFIG_VERSION = 2  # Increment this when config structure changes
 DEFAULT_CONFIG = {
     "version": CONFIG_VERSION,  # Add version to default config
     "useGitIgnore": True,
@@ -28,17 +28,30 @@ DEFAULT_CONFIG = {
     "safeMode": True,
     "storeFilesChosen": True,
     "lineNumbers": False,
+    "showIgnoredInTree": False,
+    "showDefaultIgnoredInTree": False,
 }
 
-def generate_tree_structure(root_dir, gitignore_spec):
+def generate_tree_structure(root_dir, gitignore_spec, show_ignored=False, show_default_ignored=False):
     """Generate a tree-like directory structure, mimicking the 'tree' command output
        with correct characters, indentation, and alphabetical ordering."""
     tree_lines = ['.']  # Start with the root directory indicator
     file_list = []
 
     def _generate_tree(dir_path, indent_prefix):
-        items = sorted([item for item in os.listdir(dir_path)
-                       if not is_ignored(os.path.join(dir_path, item), gitignore_spec, root_dir)])
+        items = sorted(os.listdir(dir_path))
+        
+        # Filter items based on ignore settings
+        if not show_ignored:
+            if show_default_ignored:
+                # Only filter out gitignore items, but show default ignored items
+                items = [item for item in items if not (gitignore_spec and 
+                          gitignore_spec.match_file(os.path.relpath(os.path.join(dir_path, item), root_dir)))]
+            else:
+                # Filter out all ignored items
+                items = [item for item in items
+                       if not is_ignored(os.path.join(dir_path, item), gitignore_spec, root_dir)]
+        
         num_items = len(items)
 
         for index, item in enumerate(items):
@@ -183,12 +196,19 @@ def interactive_file_selector(file_list):
     curses.wrapper(draw_menu)
     return selected_files
 
-def combine_files_with_structure(root_dir, use_git_ignore, interactive=False, previous_files=None, safe_mode=True, line_numbers=False):
+def combine_files_with_structure(root_dir, use_git_ignore, interactive=False, previous_files=None, 
+                          safe_mode=True, line_numbers=False, show_ignored_in_tree=False, 
+                          show_default_ignored_in_tree=False):
     """Combine file contents with directory structure."""
     combined_content = []
 
     gitignore_spec = load_gitignore(root_dir) if use_git_ignore else None
-    tree_structure, file_list = generate_tree_structure(root_dir, gitignore_spec)
+    tree_structure, file_list = generate_tree_structure(
+        root_dir, 
+        gitignore_spec, 
+        show_ignored=show_ignored_in_tree,
+        show_default_ignored=show_default_ignored_in_tree
+    )
 
     combined_content.append("# Project Directory Structure:")
     combined_content.append(tree_structure)
@@ -297,11 +317,17 @@ def migrate_config(config, current_version, is_global=False):
                 config["previousFiles"] = config.get("previousFiles", [])
             config["version"] = 1
             print(f"Migrated {'global' if is_global else 'local'} config from version 0 to 1")
+        elif config["version"] == 1:
+            # Migrate from version 1 to 2
+            config["showIgnoredInTree"] = False
+            config["showDefaultIgnoredInTree"] = False
+            config["version"] = 2
+            print(f"Migrated {'global' if is_global else 'local'} config from version 1 to 2")
         # Add more elif blocks here for future versions
-        # elif config["version"] == 1:
-        #     # Migrate from version 1 to 2
+        # elif config["version"] == 2:
+        #     # Migrate from version 2 to 3
         #     config["newSetting"] = "default"
-        #     config["version"] = 2
+        #     config["version"] = 3
 
     return config
 
@@ -347,6 +373,10 @@ def write_config(file_path, isGlobal=False):
         f.write(f"storeFilesChosen: {str(config['storeFilesChosen']).lower()}\n")
         f.write("# Whether to include line numbers in the output (--line-numbers, -n)\n")
         f.write(f"lineNumbers: {str(config['lineNumbers']).lower()}\n")
+        f.write("# Whether to show ignored files in the directory tree\n")
+        f.write(f"showIgnoredInTree: {str(config['showIgnoredInTree']).lower()}\n")
+        f.write("# Whether to show only default ignored files in the directory tree while still respecting gitignore\n")
+        f.write(f"showDefaultIgnoredInTree: {str(config['showDefaultIgnoredInTree']).lower()}\n")
         if not isGlobal:
             f.write("# Previously selected files (when using the -s or --save flag previously)\n")
 
@@ -416,6 +446,10 @@ def parse_config(config_path):
                     config["storeFilesChosen"] = value.lower() == "true"
                 elif key == "lineNumbers":
                     config["lineNumbers"] = value.lower() == "true"
+                elif key == "showIgnoredInTree":
+                    config["showIgnoredInTree"] = value.lower() == "true"
+                elif key == "showDefaultIgnoredInTree":
+                    config["showDefaultIgnoredInTree"] = value.lower() == "true"
 
     return config
 
@@ -473,6 +507,8 @@ def main():
     parser.add_argument("-n", "--line-numbers", action="store_true", help="Add line numbers to the output")
     parser.add_argument("--version", action="store_true", help="Returns the version of GPTree")
     parser.add_argument("--disable-safe-mode", "-dsm", action="store_true", help="Disable safe mode")
+    parser.add_argument("--show-ignored-in-tree", action="store_true", help="Show ignored files in the directory tree")
+    parser.add_argument("--show-default-ignored-in-tree", action="store_true", help="Show default ignored files in the directory tree (still respects gitignore)")
 
     args = parser.parse_args()
 
@@ -507,6 +543,10 @@ def main():
         config["lineNumbers"] = True
     if args.disable_safe_mode:
         config["safeMode"] = False
+    if args.show_ignored_in_tree:
+        config["showIgnoredInTree"] = True
+    if args.show_default_ignored_in_tree:
+        config["showDefaultIgnoredInTree"] = True
 
     # Determine output file path
     output_file = config["outputFile"]
@@ -532,7 +572,9 @@ def main():
             interactive=args.interactive,
             previous_files=previous_files,
             safe_mode=config["safeMode"],
-            line_numbers=config["lineNumbers"]
+            line_numbers=config["lineNumbers"],
+            show_ignored_in_tree=config["showIgnoredInTree"], 
+            show_default_ignored_in_tree=config["showDefaultIgnoredInTree"]
         )
 
         # Add token estimation
