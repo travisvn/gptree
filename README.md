@@ -33,6 +33,11 @@ The resulting file can easily be copied and pasted into LLM prompts to provide t
 - 📋 **Clipboard Support**: Automatically copy output to clipboard if desired.
 - 🛠 **Custom Configuration Management**: Define configurations that are auto-detected per project or globally.
 
+## 🆕 [GPTree GUI](https://github.com/travisvn/gptree-gui) 🎉
+- Written in Rust & _very_ lightweight!
+- Available on all desktop platforms
+- Visit [GitHub repo](https://github.com/travisvn/gptree-gui) or the new homepage [gptree.dev](https://gptree.dev)
+
 ## Installation
 
 ### Install via `pipx` 📦 (Recommended)
