@@ -6,7 +6,7 @@ import curses
 import pyperclip
 import copy
 
-CURRENT_VERSION = 'v1.4.0'
+CURRENT_VERSION = 'v1.5.0'
 
 SAFE_MODE_MAX_FILES = 30
 SAFE_MODE_MAX_LENGTH = 100_000  # ~25K tokens, reasonable for most LLMs
@@ -492,7 +492,7 @@ def estimate_tokens(text):
 
 def main():
     setup_autocomplete()
-    parser = argparse.ArgumentParser(description="Provide LLM context for coding projects by combining project files into a single text file (or clipboard text) with directory tree structure")
+    parser = argparse.ArgumentParser(description="Provide LLM context for coding projects by combining project files into a single text file (or clipboard text) with directory tree structure. Check out the new GUI version at https://gptree.dev!")
     parser.add_argument("path", nargs="?", default=".", help="Root directory of the project")
     parser.add_argument("-i", "--interactive", action="store_true", help="Select files interactively")
     parser.add_argument("--ignore-gitignore", action="store_true", help="Ignore .gitignore patterns")
