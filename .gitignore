@@ -180,3 +180,7 @@ combined_code.txt
 gptree_output.txt
 
 .test_storage/
+
+CLAUDE.md
+.gptreerc
+.internal
