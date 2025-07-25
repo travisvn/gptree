@@ -43,17 +43,17 @@ jobs:
         shell: bash
         run: |
           if [ "${{ matrix.os }}" = "windows-latest" ]; then
-            pyinstaller --onefile --noconsole --name gptree.exe cli_tool_gptree/main.py
+            pyinstaller --onefile --console --name gptree.exe cli_tool_gptree/cli.py
           else
             # Dynamically find UPX path
             UPX_PATH=$(which upx || echo "")
             echo "Using UPX path: $UPX_PATH"
 
             if [ -n "$UPX_PATH" ]; then
-              pyinstaller --onefile --noconsole --upx-dir=$(dirname "$UPX_PATH") --name gptree cli_tool_gptree/main.py
+              pyinstaller --onefile --console --upx-dir=$(dirname "$UPX_PATH") --name gptree cli_tool_gptree/cli.py
             else
               echo "UPX not found; skipping compression."
-              pyinstaller --onefile --noconsole --name gptree cli_tool_gptree/main.py
+              pyinstaller --onefile --console --name gptree cli_tool_gptree/cli.py
             fi
           fi
 
